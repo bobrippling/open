@@ -38,6 +38,8 @@ my %opts = (
 
 my $wait_set = 0;
 
+usage() unless @ARGV;
+
 for(my $i = 0; $i < @ARGV; ++$i){
 	$_ = $ARGV[$i];
 
@@ -62,6 +64,9 @@ for(my $i = 0; $i < @ARGV; ++$i){
 	}elsif($_ eq '--args'){
 		push @args, @ARGV[$i + 1 .. $#ARGV];
 		last;
+
+	}elsif(/^-/){
+		usage();
 
 	}else{
 		push @files, $_;
