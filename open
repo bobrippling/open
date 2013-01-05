@@ -236,11 +236,21 @@ sub header_edit
 	for my $name (@files){
 		sub find_header
 		{
-			my $inc = '/usr/include/';
+			my @inc = ("", "arpa", "net", "sys");
 			my $r = shift;
-			opendir D, $inc or die "opendir $inc: $!\n";
-			my @matches = grep /$r/, readdir D;
-			closedir D;
+			my @matches;
+
+			for(my @tmp = @inc){
+				push @inc, "x86_64-linux-gnu/$_";
+			}
+
+			for my $inc (@inc){
+				$inc = "/usr/include/$inc";
+
+				opendir D, $inc or next;
+				push @matches, map { "$inc/$_" } grep /$r/, readdir D;
+				closedir D;
+			}
 
 			return @matches;
 		}
