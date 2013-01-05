@@ -1,11 +1,12 @@
 [suffix]
 soffice: odp, pptx?, docx?
-$VISUAL: txt, c, cpp, nfo, pl, py, s, conf
-less: log
+in_terminal $VISUAL: txt, c, cpp, nfo, pl, py, s, conf
+in_terminal less: log
 mplayer: mp3, wav, mp4, wmv
 
 [full]
 chromium: ^https?://, www\., \.com, \.co\.uk, \.net
-yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
-$VISUAL: ^\..*rc$
+in_terminal yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
+in_terminal $VISUAL: ^\..*rc$
+
 #xterm -e wget: http://.*.(tar|gz|bz2) - not called due to hash ordering

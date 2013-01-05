@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+use warnings;
+
+die "$0: need args\n" unless @ARGV;
+
+exec @ARGV if -t 0;
+
+my @terms = ($ENV{TERM}, "urxvt", "xterm");
+my @PATH = split /:/, $ENV{PATH};
+
+for my $term (@terms){
+	for my $path (@PATH){
+		my $t = "$path/$term";
+		if(-e $t){
+			exec $t, '-e', @ARGV;
+			die "exec $t: $!\n";
+		}
+	}
+}
+
+exec 'xterm', '-e', @ARGV;
