@@ -160,6 +160,12 @@ sub open_smart
 file:
 	for my $fnam (@{$h{files}}){
 		#print "maps:\n";
+
+		if(-d $fnam){
+			push @to_open, [($h{wait}, PROG_REVEAL, @{$h{args}}, $fnam)];
+			next file;
+		}
+
 		for my $prog (keys %maps){
 			#print "  $_:\n";
 			for(@{$maps{$prog}}){
