@@ -114,6 +114,7 @@ sub open_smart
 		my $suffix = 0;
 		while(<F>){
 			chomp;
+			s/#.*//;
 
 			if(/^\[(.*)\]$/){
 				if($1 eq 'full'){
