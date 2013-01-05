@@ -2,6 +2,12 @@
 use strict;
 use warnings;
 
+use constant
+{
+	PROG_REVEAL => 'rox',
+	PROG_EDIT   => 'vim',
+};
+
 sub open_smart;
 sub edit;
 sub stdin_to_editor;
@@ -210,7 +216,7 @@ sub wait_or_not
 sub edit
 {
 	my %h = @_;
-	my $e = $ENV{VISUAL} || $ENV{EDITOR} || 'vim';
+	my $e = $ENV{VISUAL} || $ENV{EDITOR} || PROG_EDIT;
 	return wait_or_not($h{wait}, $e, @{$h{args}}, @{$h{files}});
 }
 
@@ -232,7 +238,7 @@ sub stdin_to_editor
 sub reveal
 {
 	my %h = @_;
-	return wait_or_not($h{wait}, "rox", @{$h{args}}, @{$h{files}});
+	return wait_or_not($h{wait}, PROG_REVEAL, @{$h{args}}, @{$h{files}});
 }
 
 sub header_edit
