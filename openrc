@@ -1,6 +1,6 @@
 [suffix]
 soffice: odp, pptx?, docx?
-$VISUAL: txt, c, cpp, nfo
+$VISUAL: txt, c, cpp, nfo, pl, py, s
 less: log
 
 [full]
