@@ -149,6 +149,8 @@ sub open_smart
 	my $ec = 0;
 	my %h = @_;
 
+	my @to_open;
+
 file:
 	for my $fnam (@{$h{files}}){
 		#print "maps:\n";
@@ -162,17 +164,18 @@ file:
 				#print "    $reg\n"
 
 				if($fnam =~ /$reg/){
-					wait_or_not($h{wait}, $prog, @{$h{args}}, $fnam);
+					push @to_open, [($h{wait}, $prog, @{$h{args}}, $fnam)];
 					next file;
 				}
 			}
 		}
 
-		print STDERR "no program found for $fnam\n";
-		$ec = 1;
+		die "no program found for $fnam\n";
 	}
 
-	return $ec;
+	wait_or_not(@{$_}) for @to_open;
+
+	return 0;
 }
 
 sub wait_or_not
