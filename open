@@ -162,8 +162,8 @@ file:
 				#print "    $reg\n"
 
 				if($fnam =~ /$reg/){
-					wait_or_not($h{wait}, $prog, @{$h{args}}, @{$h{files}});
-					last file;
+					wait_or_not($h{wait}, $prog, @{$h{args}}, $fnam);
+					next file;
 				}
 			}
 		}
