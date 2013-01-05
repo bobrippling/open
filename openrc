@@ -1,0 +1,6 @@
+[suffix]
+soffice: odp, pptx?, docx?
+vim: txt
+
+[full]
+chromium: ^https?://, www\., \.com, \.co\.uk, \.net

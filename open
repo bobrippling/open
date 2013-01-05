@@ -1,0 +1,338 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# TODO: change rox to use this
+
+sub open_smart;
+sub edit;
+sub stdin_to_editor;
+sub reveal;
+sub header_edit;
+sub wait_or_not;
+
+sub usage
+{
+	print STDERR <<"!";
+Usage: $0 -[efWwRh]
+-e: edit
+-f: stdin-edit
+-W: wait for exit (true by default for editing)
+-w: don't wait for exit
+-R: reveal
+-h: header search
+!
+	exit 1;
+}
+
+my $cmd = \&open_smart;
+my(@files, @args);
+
+my %opts = (
+	'e'    => 0,
+	'f'    => 0,
+	'W'    => 0,
+	'R'    => 0,
+	'h'    => 0,
+);
+
+my $wait_set = 0;
+
+for(my $i = 0; $i < @ARGV; ++$i){
+	$_ = $ARGV[$i];
+
+	if($_ eq '--'){
+		push @files, @ARGV[$i + 1 .. $#ARGV];
+		last;
+	}
+
+	if(/^-([a-z])$/i){
+		my $k = $1;
+
+		if(exists $opts{$k}){
+			$opts{$k} = 1;
+			$wait_set = 1 if $k eq 'W';
+		}elsif($k eq 'w'){
+			$opts{W} = 0;
+			$wait_set = 1;
+		}else{
+			usage();
+		}
+
+	}elsif($_ eq '--args'){
+		push @args, @ARGV[$i + 1 .. $#ARGV];
+		last;
+
+	}else{
+		push @files, $_;
+
+	}
+}
+
+if($opts{e} + $opts{f} + $opts{R} + $opts{h} > 1){
+	print STDERR "Can't combine -e, -f, -R and -h\n";
+	usage();
+}
+
+my $should_wait = 1;
+if($opts{e}){
+	$cmd = \&edit;
+
+}elsif($opts{f}){
+	# <STDIN> | $EDITOR -
+	$cmd = \&stdin_to_editor;
+
+}elsif($opts{R}){
+	# open with rox
+	$cmd = \&reveal;
+	$should_wait = 0;
+
+}elsif($opts{h}){
+	# search /usr/include/$_ for @files
+	$cmd = \&header_edit;
+
+}
+
+$opts{W} = 1 if $should_wait and not $wait_set;
+
+exit(&{$cmd}((
+		wait  => !!$opts{W},
+		args  => [@args],
+		files => [@files])));
+
+# end ---
+
+sub open_smart
+{
+	sub read_smart_maps
+	{
+		my $rc = "$ENV{HOME}/.openrc";
+		open F, '<', $rc or die "open $rc: $!\n";
+
+		my %maps;
+
+		my $suffix = 0;
+		while(<F>){
+			chomp;
+
+			if(/^\[(.*)\]$/){
+				if($1 eq 'full'){
+					$suffix = 0;
+				}elsif($1 eq 'suffix'){
+					$suffix = 1;
+				}else{
+					die "invalid section \"$1\" in $rc\n";
+				}
+
+			}elsif(my($prog, $matches) = /^([^:]+): *(.*)/){
+				my @matches = split / *, */, $matches;
+
+				push @{$maps{$prog}}, [ $_, $suffix ] for @matches;
+
+			}elsif(length){
+				die "invalid confiuration line: \"$1\" in $rc\n";
+			}
+		}
+
+		close F;
+
+		return %maps;
+	}
+
+	my %maps = read_smart_maps();
+	my $ec = 0;
+	my %h = @_;
+
+file:
+	for my $fnam (@{$h{files}}){
+		#print "maps:\n";
+		for my $prog (keys %maps){
+			#print "  $_:\n";
+			for(@{$maps{$prog}}){
+				my($reg, $suffix) = ($_->[0], $_->[1]);
+				if($suffix){
+					$reg = "\\.$reg\$";
+				}
+				#print "    $reg\n"
+
+				if($fnam =~ /$reg/){
+					wait_or_not($h{wait}, $prog, @{$h{args}}, @{$h{files}});
+					last file;
+				}
+			}
+		}
+
+		print STDERR "no program found for $fnam\n";
+		$ec = 1;
+	}
+
+	return $ec;
+}
+
+sub wait_or_not
+{
+	my($wait, @rest) = @_;
+	my $pid = fork();
+
+	die "fork(): $!\n" unless defined $pid;
+
+	if($pid == 0){
+		exec @rest;
+		die;
+	}else{
+		# parent
+		if($wait){
+			my $reaped = wait();
+			my $ret = $?;
+
+			die "wait(): $!\n" if $reaped == -1;
+			warn "unexpected dead child $reaped (expected $pid)\n" if $reaped != $pid;
+
+			return $ret;
+		}
+	}
+}
+
+sub edit
+{
+	my %h = @_;
+	my $e = $ENV{VISUAL} || $ENV{EDITOR} || 'vim';
+	return wait_or_not($h{wait}, $e, @{$h{args}}, @{$h{files}});
+}
+
+sub stdin_to_editor
+{
+	my $tmp = "/tmp/stdin_$$";
+
+	open F, '>', $tmp or die "open $tmp: $!\n";
+	print F $_ while <STDIN>;
+	close F;
+
+	my %h = @_;
+	push @{$h{files}}, $tmp;
+	my $r = edit(%h);
+	unlink $tmp;
+	return $r;
+}
+
+sub reveal
+{
+	my %h = @_;
+	return wait_or_not($h{wait}, "rox", @{$h{args}}, @{$h{files}});
+}
+
+sub header_edit
+{
+	my %h = @_;
+	my @files = @{$h{files}};
+	@{$h{files}} = ();
+
+	for my $name (@files){
+		sub find_header
+		{
+			my $inc = '/usr/include/';
+			my $r = shift;
+			opendir D, $inc or die "opendir $inc: $!\n";
+			my @matches = grep /$r/, readdir D;
+			closedir D;
+
+			return @matches;
+		}
+
+		my @paths = find_header($name);
+		push @{$h{files}}, @paths if @paths;
+	}
+
+	return edit(%h);
+}
+
+
+
+__DATA__
+NAME
+     open -- open files and directories
+
+SYNOPSIS
+     open [-e] [-t] [-f] [-F] [-W] [-R] [-n] [-g] [-h] [-b bundle_identifier] [-a application] file ...
+          [--args arg1 ...]
+
+DESCRIPTION
+     The open command opens a file (or a directory or URL), just as if you had double-clicked the file's
+     icon. If no application name is specified, the default application as determined via LaunchServices is
+     used to open the specified files.
+
+     If the file is in the form of a URL, the file will be opened as a URL.
+
+     You can specify one or more file names (or pathnames), which are interpreted relative to the shell or
+     Terminal window's current working directory. For example, the following command would open all Word
+     files in the current working directory:
+
+     open *.doc
+
+     Opened applications inherit environment variables just as if you had launched the application directly
+     through its full path.  This behavior was also present in Tiger.
+
+     The options are as follows:
+
+     -a application
+         Specifies the application to use for opening the file
+
+     -b bundle_indentifier
+         Specifies the bundle identifier for the application to use when opening the file
+
+     -e  Causes the file to be opened with /Applications/TextEdit
+
+     -t  Causes the file to be opened with the default text editor, as determined via LaunchServices
+
+     -f  Reads input from standard input and opens the results in the default text editor.  End input by
+         sending EOF character (type Control-D).  Also useful for piping output to open and having it open
+         in the default text editor.
+
+     -F  Opens the application "fresh," that is, without restoring windows. Saved persistent state is lost,
+         except for Untitled documents.
+
+     -W  Causes open to wait until the applications it opens (or that were already open) have exited.  Use
+         with the -n flag to allow open to function as an appropriate app for the $EDITOR environment variable.
+
+     -R  Reveals the file(s) in the Finder instead of opening them.
+
+     -n  Open a new instance of the application(s) even if one is already running.
+
+     -g  Do not bring the application to the foreground.
+
+     -h  Searches header locations for a header whose name matches the given string and then opens it.  Pass
+         a full header name (such as NSView.h) for increased performance.
+
+     --args
+         All remaining arguments are passed to the opened application in the argv parameter to main().
+         These arguments are not opened or interpreted by the open tool.
+
+
+EXAMPLES
+     "open '/Volumes/Macintosh HD/foo.txt'" opens the document in the default application for its type (as
+     determined by LaunchServices).
+
+     "open '/Volumes/Macintosh HD/Applications/'" opens that directory in the Finder.
+
+     "open -a /Applications/TextEdit.app '/Volumes/Macintosh HD/foo.txt'" opens the document in the applica-tion application
+     tion specified (in this case, TextEdit).
+
+     "open -b com.apple.TextEdit '/Volumes/Macintosh HD/foo.txt'" opens the document in the application
+     specified (in this case, TextEdit).
+
+     "open -e '/Volumes/Macintosh HD/foo.txt'" opens the document in TextEdit.
+
+     "ls | open -f" writes the output of the 'ls' command to a file in /tmp and opens the file in the
+     default text editor (as determined by LaunchServices).
+
+     "open http://www.apple.com/" opens the URL in the default browser.
+
+     "open 'file://localhost/Volumes/Macintosh HD/foo.txt'" opens the document in the default application
+     for its type (as determined by LaunchServices).
+
+     "open 'file://localhost/Volumes/Macintosh HD/Applications/'" opens that directory in the Finder.
+
+     "open -h NSView" lists headers whose names contain NSView and allows you to choose which ones to open.
+
+     "open -a Xcode -h NSString.h" quickly opens /System/Library/Frameworks/Foundation.framework/Head-ers/NSString.h /System/Library/Frameworks/Foundation.framework/Headers/NSString.h
+     ers/NSString.h in Xcode.
