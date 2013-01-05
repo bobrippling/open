@@ -2,8 +2,6 @@
 use strict;
 use warnings;
 
-# TODO: change rox to use this
-
 sub open_smart;
 sub edit;
 sub stdin_to_editor;
