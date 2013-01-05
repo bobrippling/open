@@ -104,7 +104,7 @@ exit(&{$cmd}((
 
 sub open_smart
 {
-	sub read_smart_maps
+	sub read_maps
 	{
 		my $rc = "$ENV{HOME}/.openrc";
 		open F, '<', $rc or die "open $rc: $!\n";
@@ -140,7 +140,7 @@ sub open_smart
 		return %maps;
 	}
 
-	my %maps = read_smart_maps();
+	my %maps = read_maps();
 	my $ec = 0;
 	my %h = @_;
 
