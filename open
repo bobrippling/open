@@ -183,6 +183,11 @@ sub wait_or_not
 	die "fork(): $!\n" unless defined $pid;
 
 	if($pid == 0){
+		if($rest[0] =~ / /){
+			my $a = shift @rest;
+			unshift @rest, split / +/, $a;
+		}
+
 		exec @rest;
 		die;
 	}else{
