@@ -1,6 +1,8 @@
 [suffix]
 soffice: odp, pptx?, docx?
-vim: txt
+$VISUAL: txt, c, cpp, nfo
+less: log
 
 [full]
 chromium: ^https?://, www\., \.com, \.co\.uk, \.net
+$VISUAL: ^\..*rc$
