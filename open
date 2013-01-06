@@ -137,7 +137,7 @@ sub open_smart
 			}elsif(my($prog, $matches) = /^([^:]+): *(.*)/){
 				my @matches = split / *, */, $matches;
 
-				$prog =~ s/^\$([^ ]+)/$ENV{$1} ? $ENV{$1} : $1/e;
+				$prog =~ s/\$([A-Z_]+)/$ENV{$1} ? $ENV{$1} : $1/e;
 
 				push @{$maps{$prog}}, [ $_, $suffix ] for @matches;
 
