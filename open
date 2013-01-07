@@ -111,13 +111,6 @@ exit(&{$cmd}((
 
 # end ---
 
-sub basename
-{
-	my $a = shift;
-	return $1 if $a =~ m;/([^/]+)$;;
-	return $a;
-}
-
 sub open_smart
 {
 	sub read_maps
@@ -194,7 +187,7 @@ file:
 				}
 				#print "    $reg\n"
 
-				if(basename($fnam) =~ /$reg/){
+				if($fnam =~ /$reg/){
 					push @to_open, [($h{wait}, $prog, @{$h{args}}, $fnam)];
 					next file;
 				}
