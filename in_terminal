@@ -18,4 +18,4 @@ for my $term (@terms){
 	}
 }
 
-exec 'xterm', '-e', @ARGV;
+exec 'urxvt', '-e', @ARGV;

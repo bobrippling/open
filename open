@@ -142,9 +142,21 @@ sub open_smart
 				}
 
 			}elsif(my($prog, $matches) = /^([^:]+): *(.*)/){
+				sub getenv
+				{
+					my $k = shift;
+					return $ENV{$k} if $ENV{$k};
+					my %backup = (
+						"TERM" => "urxvt",
+						"VISUAL" => "vim",
+					);
+					return $backup{$k} if $backup{$k};
+					return "\$$k";
+				}
+
 				my @matches = split / *, */, $matches;
 
-				$prog =~ s/\$([A-Z_]+)/$ENV{$1} ? $ENV{$1} : $1/e;
+				$prog =~ s/\$([A-Z_]+)/getenv($1)/e;
 
 				push @{$maps{$prog}}, [ $_, $suffix ] for @matches;
 
