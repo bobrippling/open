@@ -4,6 +4,7 @@ in_terminal $VISUAL: txt, c, cpp, nfo, pl, py, s, conf
 in_terminal less: log
 mplayer: mp3, wav, mp4, wmv
 zathura: pdf
+chromium: html?
 
 [full]
 chromium: ^https?://, www\., \.com, \.co\.uk, \.net
