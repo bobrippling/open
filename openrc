@@ -4,10 +4,10 @@ in_terminal $VISUAL: txt, c, cpp, nfo, pl, py, s, conf
 in_terminal less: log
 mplayer: mp3, wav, mp4, wmv
 zathura: pdf
-chromium: html?
+uzbl: html?
 
 [full]
-chromium: ^https?://, www\., \.com, \.co\.uk, \.net
+uzbl: ^https?://, www\., \.com, \.co\.uk, \.net
 in_terminal yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
 in_terminal $VISUAL: \.[^/]*rc$
 
