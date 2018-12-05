@@ -1,14 +1,15 @@
-[suffix]
-soffice: odp, pptx?, docx?
-in_terminal $VISUAL: txt, c, cpp, nfo, pl, py, s, conf
-in_terminal less: log
-mplayer: mp3, wav, mp4, wmv
-zathura: pdf
-uzbl: html?
-
 [full]
-uzbl: ^https?://, www\., \.com, \.co\.uk, \.net
+firefox: ^https?://, www\., \.com, \.co\.uk, \.net
 in_terminal yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
 in_terminal $VISUAL: \.[^/]*rc$
+
+[suffix]
+soffice: odp, pptx?, docx?
+#in_terminal $VISUAL: txt, c, cpp, nfo, pl, py, s, conf
+in_terminal less: log
+mplayer: mp3, wav, mp4, wmv
+mupdf: pdf
+firefox: html?
+soffice: odt
 
 #xterm -e wget: http://.*.(tar|gz|bz2) - not called due to hash ordering
