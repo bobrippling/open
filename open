@@ -151,7 +151,13 @@ sub open_smart
 
 				$prog =~ s/\$([A-Z_]+)/getenv($1)/e;
 
-				push @{$maps{$prog}}, [ $_, $suffix ] for @matches;
+				my $key = $prog;
+				if($suffix){
+					# compare file extensions case insensitively
+					$key = lc $key;
+				}
+
+				push @{$maps{$key}}, [ $_, $suffix ] for @matches;
 
 			}elsif(length){
 				die "invalid confiuration line: \"$1\" in $rc\n";
@@ -178,6 +184,8 @@ file:
 			next file;
 		}
 
+		(my $fnam_for_test = $fnam) =~ s/\.[a-zA-Z]+$/lc($&)/e;
+
 		for my $prog (keys %maps){
 			#print "  $_:\n";
 			for(@{$maps{$prog}}){
@@ -187,7 +195,7 @@ file:
 				}
 				#print "    $reg\n"
 
-				if($fnam =~ /$reg/){
+				if($fnam_for_test =~ /$reg/){
 					push @to_open, [($h{wait}, $prog, @{$h{args}}, $fnam)];
 					next file;
 				}
