@@ -1,6 +1,6 @@
 [full]
 firefox: ^https?://, www\., \.com, \.co\.uk, \.net
-in_terminal yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
+#in_terminal yplay.pl: ^(http://)?(www\.)?youtube\.com/watch\?v=
 in_terminal $VISUAL: \.[^/]*rc$
 
 [suffix]
