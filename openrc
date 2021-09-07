@@ -14,3 +14,6 @@ soffice: odt
 mupdf: pdf
 
 #xterm -e wget: http://.*.(tar|gz|bz2) - not called due to hash ordering
+
+[directories]
+pcmanfm

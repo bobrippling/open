@@ -4,7 +4,6 @@ use warnings;
 
 use constant
 {
-	PROG_REVEAL => 'rox',
 	PROG_EDIT   => 'vim',
 };
 
@@ -111,86 +110,100 @@ exit(&{$cmd}((
 
 # end ---
 
-sub open_smart
+sub read_maps
 {
-	sub read_maps
-	{
-		my $rc = "$ENV{HOME}/.openrc";
-		open F, '<', $rc or die "open $rc: $!\n";
+	my $rc = "$ENV{HOME}/.openrc";
+	open F, '<', $rc or die "open $rc: $!\n";
 
-		my %maps;
+	my %maps;
+	my $prog_reveal = '';
 
-		my $suffix = 0;
-		while(<F>){
-			chomp;
-			s/#.*//;
+	my $mode = 0;
+	while(<F>){
+		chomp;
+		s/#.*//;
 
-			if(/^\[(.*)\]$/){
-				if($1 eq 'full'){
-					$suffix = 0;
-				}elsif($1 eq 'suffix'){
-					$suffix = 1;
-				}else{
-					die "invalid section \"$1\" in $rc\n";
-				}
-
-			}elsif(my($prog, $matches) = /^([^:]+): *(.*)/){
-				sub getenv
-				{
-					my $k = shift;
-					return $ENV{$k} if $ENV{$k};
-					my %backup = (
-						"TERM" => "urxvt",
-						"VISUAL" => "vim",
-					);
-					return $backup{$k} if $backup{$k};
-					return "\$$k";
-				}
-
-				my @matches = split / *, */, $matches;
-
-				$prog =~ s/\$([A-Z_]+)/getenv($1)/e;
-
-				my $key = $prog;
-				if($suffix){
-					# compare file extensions case insensitively
-					$key = lc $key;
-				}
-
-				push @{$maps{$key}}, [ $_, $suffix ] for @matches;
-
-			}elsif(length){
-				die "invalid confiuration line: \"$1\" in $rc\n";
+		if(/^\[(.*)\]$/){
+			if($1 eq 'full'){
+				$mode = $1;
+			}elsif($1 eq 'suffix'){
+				$mode = $1;
+			}elsif($1 eq 'directories'){
+				$mode = $1;
+			}else{
+				die "invalid section \"$1\" in $rc\n";
 			}
+
+		}elsif(!($mode eq 'directories') and my($prog, $matches) = /^([^:]+): *(.*)/){
+			sub getenv
+			{
+				my $k = shift;
+				return $ENV{$k} if $ENV{$k};
+				my %backup = (
+					"TERM" => "urxvt",
+					"VISUAL" => "vim",
+				);
+				return $backup{$k} if $backup{$k};
+				return "\$$k";
+			}
+
+			my @matches = split / *, */, $matches;
+
+			$prog =~ s/\$([A-Z_]+)/getenv($1)/e;
+
+			my $key = $prog;
+			if($mode eq 'suffix'){
+				# compare file extensions case insensitively
+				$key = lc $key;
+			}
+
+			push @{$maps{$key}}, [ $_, $mode ] for @matches;
+
+		}elsif($mode eq 'directories' && length){
+			if(length($prog_reveal)){
+				die "already have dir program, in $rc\n";
+			}
+			$prog_reveal = $_;
+
+		}elsif(length){
+			die "invalid confiuration line: \"$1\" in $rc\n";
 		}
-
-		close F;
-
-		return %maps;
 	}
 
-	my %maps = read_maps();
+	if(!length($prog_reveal)){
+		die "no directory program specified, in $rc\n";
+	}
+
+	close F;
+
+	return $prog_reveal, \%maps;
+}
+
+sub open_smart
+{
 	my $ec = 0;
 	my %h = @_;
 
 	my @to_open;
+
+	my ($prog_reveal, $maps) = read_maps();
 
 file:
 	for my $fnam (@{$h{files}}){
 		#print "maps:\n";
 
 		if(-d $fnam){
-			push @to_open, [($h{wait}, PROG_REVEAL, @{$h{args}}, $fnam)];
+			push @to_open, [($h{wait}, $prog_reveal, @{$h{args}}, $fnam)];
 			next file;
 		}
 
 		(my $fnam_for_test = $fnam) =~ s/\.[a-zA-Z]+$/lc($&)/e;
 
-		for my $prog (keys %maps){
+		for my $prog (keys %$maps){
 			#print "  $_:\n";
-			for(@{$maps{$prog}}){
-				my($reg, $suffix) = ($_->[0], $_->[1]);
-				if($suffix){
+			for(@{$maps->{$prog}}){
+				my($reg, $mode) = ($_->[0], $_->[1]);
+				if($mode eq 'suffix'){
 					$reg = "\\.$reg\$";
 				}
 				#print "    $reg\n"
@@ -264,7 +277,8 @@ sub stdin_to_editor
 sub reveal
 {
 	my %h = @_;
-	return wait_or_not($h{wait}, PROG_REVEAL, @{$h{args}}, @{$h{files}});
+	my ($prog_reveal) = read_maps();
+	return wait_or_not($h{wait}, $prog_reveal, @{$h{args}}, @{$h{files}});
 }
 
 sub header_edit
