@@ -12,6 +12,9 @@ mupdf: pdf
 firefox: html?
 soffice: odt
 mupdf: pdf
+sxiv: png, jpg, jpeg, gif
+viking: gpx
+# openshot-qt: mp4
 
 #xterm -e wget: http://.*.(tar|gz|bz2) - not called due to hash ordering
 
